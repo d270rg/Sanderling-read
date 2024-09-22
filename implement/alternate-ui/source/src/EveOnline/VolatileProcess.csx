@@ -288,7 +288,7 @@ Response request(Request request)
         WinApi.GetWindowRect(windowHandle, ref windowRect);
 
         var clientRectOffsetFromScreen = new WinApi.Point(0, 0);
-        WinApi.ClientToScreen(windowHandle, ref clientRectOffsetFromScreen);
+        // WinApi.ClientToScreen(windowHandle, ref clientRectOffsetFromScreen);
 
         var windowClientRectOffset =
             new Location2d

@@ -1,0 +1,42 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.002.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "implement", "implement", "{C5D3DBC2-A2AD-4C45-98F7-34DF3AA331A7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "read-memory-64-bit", "implement\read-memory-64-bit\read-memory-64-bit.csproj", "{4B63E5AF-2539-406A-8099-4D29DC1591B4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "explore", "explore", "{DC8740F0-64A6-447F-B05C-D2CD4B89F4CB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2019-12-28.explore-64-bit-client", "2019-12-28.explore-64-bit-client", "{27CA02D1-A565-4E13-B4A1-585CAD3F41EE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "read-memory-64-bit", "explore\2019-12-28.explore-64-bit-client\read-memory-64-bit\read-memory-64-bit.csproj", "{341E4C11-720B-401A-8DFF-4629B60093A4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4B63E5AF-2539-406A-8099-4D29DC1591B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B63E5AF-2539-406A-8099-4D29DC1591B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B63E5AF-2539-406A-8099-4D29DC1591B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B63E5AF-2539-406A-8099-4D29DC1591B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{341E4C11-720B-401A-8DFF-4629B60093A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{341E4C11-720B-401A-8DFF-4629B60093A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{341E4C11-720B-401A-8DFF-4629B60093A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{341E4C11-720B-401A-8DFF-4629B60093A4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4B63E5AF-2539-406A-8099-4D29DC1591B4} = {C5D3DBC2-A2AD-4C45-98F7-34DF3AA331A7}
+		{27CA02D1-A565-4E13-B4A1-585CAD3F41EE} = {DC8740F0-64A6-447F-B05C-D2CD4B89F4CB}
+		{341E4C11-720B-401A-8DFF-4629B60093A4} = {27CA02D1-A565-4E13-B4A1-585CAD3F41EE}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1475BF89-C09B-4329-83E2-47E0171CE5EB}
+	EndGlobalSection
+EndGlobal
