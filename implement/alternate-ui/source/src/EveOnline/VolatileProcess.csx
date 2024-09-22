@@ -308,22 +308,6 @@ Response request(Request request)
             }
         }
 
-        {
-            /*
-            Maybe taking screenshots needs the window to be not occluded by other windows.
-            We can review this later.
-            */
-            var setForegroundWindowError = SetForegroundWindowInWindows.TrySetForegroundWindow(windowHandle);
-
-            if (setForegroundWindowError != null)
-            {
-                return new Response
-                {
-                    FailedToBringWindowToFront = setForegroundWindowError,
-                };
-            }
-        }
-
         var historyEntry = new ReadingFromGameClient
         {
             windowHandle = windowHandle,
@@ -355,19 +339,6 @@ Response request(Request request)
     if (request?.EffectSequenceOnWindow?.task != null)
     {
         var windowHandle = new IntPtr(long.Parse(request.EffectSequenceOnWindow.windowId));
-
-        if (request.EffectSequenceOnWindow.bringWindowToForeground)
-        {
-            var setForegroundWindowError = SetForegroundWindowInWindows.TrySetForegroundWindow(windowHandle);
-
-            if (setForegroundWindowError != null)
-            {
-                return new Response
-                {
-                    FailedToBringWindowToFront = setForegroundWindowError,
-                };
-            }
-        }
 
         foreach (var sequenceElement in request.EffectSequenceOnWindow.task)
         {
