@@ -755,6 +755,7 @@ decideNextStepToReadFromLiveProcess { timeMilli } stateBefore =
                                                                     (EveOnline.VolatileProcessInterface.ReadFromWindow
                                                                         { windowId = gameClientProcess.mainWindowId
                                                                         , uiRootAddress = uiRootAddress
+                                                                        , parseText = "False"
                                                                         }
                                                                     )
                                                                 )

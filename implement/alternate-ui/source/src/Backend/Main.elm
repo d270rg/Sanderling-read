@@ -17,7 +17,13 @@ import Json.Encode
 import Platform.WebService
 import Url
 import Url.Parser
-
+import InterfaceToFrontendClient exposing (RequestFromClient(..))
+import EveOnline.MemoryReading
+import Dict exposing (Dict)
+import Json.Decode exposing (Value)
+import Maybe
+import Json.Decode exposing (null)
+import EveOnline.ParseUserInterface
 
 type alias State =
     { posixTimeMilli : Int
@@ -267,10 +273,26 @@ updateForHttpRequestEventWithoutVolatileProcessMaintenance httpRequestEvent stat
                                                                 )
 
                                                             Ok requestToVolatileProcessOk ->
-                                                                processRequestToVolatileProcessComplete
-                                                                    { httpRequestId = httpRequestEvent.httpRequestId }
-                                                                    requestToVolatileProcessOk
-                                                                    stateBeforeResult
+                                                                case runInVolatileProcessRequest of 
+                                                                    EveOnline.VolatileProcessInterface.ReadFromWindow readFromWindow ->
+                                                                        processRequestToVolatileProcessComplete
+                                                                            { httpRequestId = httpRequestEvent.httpRequestId }
+                                                                            requestToVolatileProcessOk
+                                                                            stateBeforeResult
+                                                                            (case String.toLower readFromWindow.parseText of
+                                                                                        "true" ->
+                                                                                            Just True
+                                                                                        "false" ->
+                                                                                            Just False
+                                                                                        _ ->
+                                                                                            Nothing 
+                                                                            )
+                                                                    _ ->
+                                                                         processRequestToVolatileProcessComplete
+                                                                            { httpRequestId = httpRequestEvent.httpRequestId }
+                                                                            requestToVolatileProcessOk
+                                                                            stateBeforeResult
+                                                                            Nothing
                                                 }
                                     in
                                     ( { stateBefore
@@ -303,23 +325,110 @@ updateForHttpRequestEventWithoutVolatileProcessMaintenance httpRequestEvent stat
                                     , [ Platform.WebService.RespondToHttpRequest httpResponse ]
                                     )
 
+encodeDictEntriesOfInterest : Dict String Json.Encode.Value -> Json.Encode.Value
+encodeDictEntriesOfInterest dict =
+    Json.Encode.dict identity identity dict
+
+-- Correctly encode your UITreeNode
+encodeUiTreeNode : EveOnline.MemoryReading.UITreeNode -> Value
+encodeUiTreeNode uiTreeNode =
+    Json.Encode.object
+        [ ("originalJson", uiTreeNode.originalJson)
+        , ("pythonObjectAddress", Json.Encode.string uiTreeNode.pythonObjectAddress)
+        , ("pythonObjectTypeName",  Json.Encode.string uiTreeNode.pythonObjectTypeName)
+        , ("dictEntriesOfInterest", 
+             encodeDictEntriesOfInterest uiTreeNode.dictEntriesOfInterest
+          )
+        , ("children", Json.Encode.null
+        )
+        ]
+
+verifyReadingResponse : Result Json.Decode.Error EveOnline.MemoryReading.UITreeNode -> Maybe EveOnline.MemoryReading.UITreeNode
+verifyReadingResponse result = 
+    case result of 
+        Ok val ->
+            Just val
+        Err _ ->
+            Nothing
+               
+decodeMemoryReading : EveOnline.VolatileProcessInterface.ReadFromWindowResultStructure -> Maybe EveOnline.MemoryReading.UITreeNode
+decodeMemoryReading structure = 
+    (case structure of 
+        EveOnline.VolatileProcessInterface.Completed completed ->
+            case completed.memoryReadingSerialRepresentationJson of
+                Just value ->
+                    verifyReadingResponse (EveOnline.MemoryReading.decodeMemoryReadingFromString value)
+                _ ->
+                    Nothing
+        _ ->
+            Nothing
+    )
+
+encodeTextReponseJson : Platform.WebService.RequestToVolatileProcessComplete -> String 
+encodeTextReponseJson encoded = 
+     encoded
+        |> (\volatileResponse -> 
+            case volatileResponse.returnValueToString of 
+                Just returnValue ->
+                    Json.Decode.decodeString EveOnline.VolatileProcessInterface.decodeResponseFromVolatileHost returnValue
+                Nothing ->
+                        Json.Decode.decodeString EveOnline.VolatileProcessInterface.decodeResponseFromVolatileHost ""
+            )
+        |> (\decodedResponseFromVolatileHost -> -- Err handling
+                case decodedResponseFromVolatileHost of 
+                    Ok responseFromVolatileHost -> 
+                        responseFromVolatileHost
+                    Err _ -> 
+                        EveOnline.VolatileProcessInterface.ListGameClientProcessesResponse []
+            )
+        |> (\readFromWindowResult -> 
+            case readFromWindowResult of
+                EveOnline.VolatileProcessInterface.ReadFromWindowResult result ->
+                    decodeMemoryReading result
+                _ -> 
+                    Nothing
+            )
+        |> (\decodedMemoryReading ->
+            case decodedMemoryReading of
+                Just decoded ->
+                    EveOnline.ParseUserInterface.getAllContainedDisplayTexts decoded
+                Nothing ->
+                    ["No texts"]
+            )
+        |> (\textsList -> Json.Encode.encode 0 (Json.Encode.list Json.Encode.string textsList) )
+
+encodeResponseJson: Platform.WebService.RequestToVolatileProcessComplete -> String 
+encodeResponseJson encoded =
+     encoded
+        |> InterfaceToFrontendClient.RunInVolatileProcessCompleteResponse
+        |> CompilationInterface.GenerateJsonConverters.jsonEncodeRunInVolatileProcessResponseStructure
+        >> Json.Encode.encode 0
+
 
 processRequestToVolatileProcessComplete :
     { httpRequestId : String }
     -> Platform.WebService.RequestToVolatileProcessComplete
     -> State
+    -> Maybe Bool
     -> ( State, Platform.WebService.Commands State )
-processRequestToVolatileProcessComplete { httpRequestId } runInVolatileProcessComplete stateBefore =
+processRequestToVolatileProcessComplete { httpRequestId } runInVolatileProcessComplete stateBefore parseText =
     let
         httpRequestsTasks =
             stateBefore.httpRequestsTasks
                 |> List.filter (.httpRequestId >> (/=) httpRequestId)
-
+                    
         httpResponseBody =
             runInVolatileProcessComplete
-                |> InterfaceToFrontendClient.RunInVolatileProcessCompleteResponse
-                |> CompilationInterface.GenerateJsonConverters.jsonEncodeRunInVolatileProcessResponseStructure
-                >> Json.Encode.encode 0
+                |> (\volatileResponse -> 
+                    case parseText of 
+                        Just shouldParse ->
+                            if shouldParse then
+                                encodeTextReponseJson volatileResponse
+                            else 
+                                encodeResponseJson volatileResponse
+                        Nothing ->
+                              encodeResponseJson volatileResponse
+                    )
 
         httpResponse =
             { httpRequestId = httpRequestId
@@ -342,7 +451,6 @@ processRequestToVolatileProcessComplete { httpRequestId } runInVolatileProcessCo
         |> addLogEntries exceptionLogEntries
     , [ Platform.WebService.RespondToHttpRequest httpResponse ]
     )
-
 
 addLogEntry : String -> State -> State
 addLogEntry logMessage =

@@ -32,6 +32,7 @@ type alias GameClientProcessSummaryStruct =
 type alias ReadFromWindowStructure =
     { windowId : String
     , uiRootAddress : String
+    , parseText : String
     }
 
 
@@ -298,10 +299,10 @@ encodeReadFromWindow readFromWindow =
 
 decodeReadFromWindow : Json.Decode.Decoder ReadFromWindowStructure
 decodeReadFromWindow =
-    Json.Decode.map2 ReadFromWindowStructure
+    Json.Decode.map3 ReadFromWindowStructure
         (Json.Decode.field "windowId" Json.Decode.string)
         (Json.Decode.field "uiRootAddress" Json.Decode.string)
-
+        (Json.Decode.field "parseText" Json.Decode.string)
 
 decodeSearchUIRootAddressResponse : Json.Decode.Decoder SearchUIRootAddressResponseStruct
 decodeSearchUIRootAddressResponse =

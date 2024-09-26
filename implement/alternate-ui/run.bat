@@ -1,0 +1,1 @@
+powershell -noexit "& ""./run-alternate-ui.ps1"""
