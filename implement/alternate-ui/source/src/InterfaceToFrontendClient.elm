@@ -1,7 +1,7 @@
 module InterfaceToFrontendClient exposing (..)
 
 import EveOnline.VolatileProcessInterface
-
+import Json.Encode
 
 type RequestFromClient
     = ReadLogRequest

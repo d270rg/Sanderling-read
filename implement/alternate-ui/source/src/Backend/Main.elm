@@ -325,24 +325,6 @@ updateForHttpRequestEventWithoutVolatileProcessMaintenance httpRequestEvent stat
                                     , [ Platform.WebService.RespondToHttpRequest httpResponse ]
                                     )
 
-encodeDictEntriesOfInterest : Dict String Json.Encode.Value -> Json.Encode.Value
-encodeDictEntriesOfInterest dict =
-    Json.Encode.dict identity identity dict
-
--- Correctly encode your UITreeNode
-encodeUiTreeNode : EveOnline.MemoryReading.UITreeNode -> Value
-encodeUiTreeNode uiTreeNode =
-    Json.Encode.object
-        [ ("originalJson", uiTreeNode.originalJson)
-        , ("pythonObjectAddress", Json.Encode.string uiTreeNode.pythonObjectAddress)
-        , ("pythonObjectTypeName",  Json.Encode.string uiTreeNode.pythonObjectTypeName)
-        , ("dictEntriesOfInterest", 
-             encodeDictEntriesOfInterest uiTreeNode.dictEntriesOfInterest
-          )
-        , ("children", Json.Encode.null
-        )
-        ]
-
 verifyReadingResponse : Result Json.Decode.Error EveOnline.MemoryReading.UITreeNode -> Maybe EveOnline.MemoryReading.UITreeNode
 verifyReadingResponse result = 
     case result of 
@@ -364,7 +346,7 @@ decodeMemoryReading structure =
             Nothing
     )
 
-encodeTextReponseJson : Platform.WebService.RequestToVolatileProcessComplete -> String 
+encodeTextReponseJson : Platform.WebService.RequestToVolatileProcessComplete -> Maybe String 
 encodeTextReponseJson encoded = 
      encoded
         |> (\volatileResponse -> 
@@ -391,11 +373,17 @@ encodeTextReponseJson encoded =
         |> (\decodedMemoryReading ->
             case decodedMemoryReading of
                 Just decoded ->
-                    EveOnline.ParseUserInterface.getAllContainedDisplayTexts decoded
+                    Just (EveOnline.ParseUserInterface.getAllContainedDisplayTexts decoded)
                 Nothing ->
-                    ["No texts"]
+                    Nothing
             )
-        |> (\textsList -> Json.Encode.encode 0 (Json.Encode.list Json.Encode.string textsList) )
+        |> (\textsList -> 
+            case textsList of 
+                Just textValue ->
+                    Just (Json.Encode.encode 0 (Json.Encode.list Json.Encode.string textValue))
+                Nothing ->
+                    Nothing
+            )
 
 encodeResponseJson: Platform.WebService.RequestToVolatileProcessComplete -> String 
 encodeResponseJson encoded =
@@ -423,12 +411,25 @@ processRequestToVolatileProcessComplete { httpRequestId } runInVolatileProcessCo
                     case parseText of 
                         Just shouldParse ->
                             if shouldParse then
-                                encodeTextReponseJson volatileResponse
+                                let 
+                                    exceptionValue = Just ""
+                                    returnValueToStringValue = encodeTextReponseJson volatileResponse
+ 
+                                    runInVolatileProcessCompleteInstance: InterfaceToFrontendClient.RunInVolatileProcessComplete
+                                    runInVolatileProcessCompleteInstance =
+                                        { 
+                                          exceptionToString = exceptionValue,
+                                          returnValueToString = returnValueToStringValue,
+                                          durationInMilliseconds = 0 -- TODO: Implement correct time calc
+                                        }
+                                in
+                                runInVolatileProcessCompleteInstance
                             else 
-                                encodeResponseJson volatileResponse
+                                volatileResponse
                         Nothing ->
-                              encodeResponseJson volatileResponse
+                              volatileResponse
                     )
+                    |> encodeResponseJson 
 
         httpResponse =
             { httpRequestId = httpRequestId
